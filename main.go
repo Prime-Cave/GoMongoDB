@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prime-cave/mongo-golang/controllers"
-	"gopkg.in/mgo.v2"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	
 )
 
 func main(){
@@ -13,14 +16,15 @@ func main(){
 	uc := controllers.NewUserController(getSession())
 	r.GET("/user/:id", uc.GetUser)
 	r.POST("/user", uc.CreateUser)
-	r.DELETE("/user/:id", uc.DeleteUser)
+	// r.DELETE("/user/:id", uc.DeleteUser)
+	fmt.Println("Sever is running on port... 8080")
 	http.ListenAndServe(":8080", r)
 }
 
-func getSession() *mgo.Session{
-	 s, err := mgo.Dial("mongodb://localhost:27107")
+func getSession() *mongo.Client{
+	 client, err := mongo.Connect(options.Client().ApplyURI(""))
 	 if err != nil {
 		panic(err)
 	 }
-	 return s
+	 return client
 }
