@@ -1,14 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prime-cave/mongo-golang/controllers"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main(){
@@ -22,7 +22,7 @@ func main(){
 }
 
 func getSession() *mongo.Client{
-	 client, err := mongo.Connect(options.Client().ApplyURI(""))
+    client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(""))
 	 if err != nil {
 		panic(err)
 	 }

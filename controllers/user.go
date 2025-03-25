@@ -10,8 +10,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prime-cave/mongo-golang/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var ctx = context.TODO()
@@ -26,7 +26,6 @@ func NewUserController(client *mongo.Client) *UserController {
 func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
     id := p.ByName("id")
     fmt.Println("ID from URL:", id)
-
     oid, err := primitive.ObjectIDFromHex(id)
     if err != nil {
         http.Error(w, "Invalid ID format", http.StatusBadRequest)
@@ -36,17 +35,12 @@ func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httpr
     fmt.Println("Converted ObjectID:", oid)
 
     u := models.User{}
-    filter := bson.M{"_id": oid}
-    fmt.Printf("Querying with filter: %+v\n", filter)
 
-    err = uc.Session.Database("mongo-golang").Collection("users").FindOne(context.Background(), filter).Decode(&u)
+    err = uc.Session.Database("mongo-golang").Collection("users").FindOne(context.Background(), bson.M{"_id": oid}).Decode(&u)
     if err != nil {
-        if err == mongo.ErrNoDocuments {
-            http.Error(w, "No document found", http.StatusNotFound)
-        } else {
-            http.Error(w, "Internal server error", http.StatusInternalServerError)
-        }
-        fmt.Println("Error:", err)
+		log.Printf("Error finding user with _id %v: %v", oid, err)
+        w.WriteHeader(http.StatusNotFound)
+        fmt.Fprintf(w, "%s", err)
         return
     }
 
@@ -58,7 +52,7 @@ func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httpr
 func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	u := models.User{}
 	json.NewDecoder(r.Body).Decode(&u)
-	u.Id = bson.NewObjectID()
+	u.Id = primitive.NewObjectID()
 
 	results, err := uc.Session.Database("mongo-golang").Collection("users").InsertOne(ctx, &u)
 	if err != nil{
