@@ -23,32 +23,6 @@ func NewUserController(client *mongo.Client) *UserController {
 	return &UserController{client}
 }
 
-func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-    id := p.ByName("id")
-    fmt.Println("ID from URL:", id)
-    oid, err := primitive.ObjectIDFromHex(id)
-    if err != nil {
-        http.Error(w, "Invalid ID format", http.StatusBadRequest)
-        return
-    }
-
-    fmt.Println("Converted ObjectID:", oid)
-
-    u := models.User{}
-
-    err = uc.Session.Database("mongo-golang").Collection("users").FindOne(context.Background(), bson.M{"_id": oid}).Decode(&u)
-    if err != nil {
-		log.Printf("Error finding user with _id %v: %v", oid, err)
-        w.WriteHeader(http.StatusNotFound)
-        fmt.Fprintf(w, "%s", err)
-        return
-    }
-
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(u)
-}
-
 func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	u := models.User{}
 	json.NewDecoder(r.Body).Decode(&u)
@@ -69,19 +43,44 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, _ ht
 	fmt.Fprintf(w, "%s\n", uj)
 }
 
-// func (uc UserController) DeleteUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-// 	id := p.ByName("id")
+func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+    id := p.ByName("id")
+    oid, err := primitive.ObjectIDFromHex(id)
+    if err != nil {
+        http.Error(w, "Invalid ID format", http.StatusBadRequest)
+        return
+    }
+    u := models.User{}
 
-// 	if !bson.IsObjectIdHex(id) {
-// 		w.WriteHeader(http.StatusNotFound)
-// 	}
+    err = uc.Session.Database("mongo-golang").Collection("users").FindOne(context.Background(), bson.M{"_id": oid}).Decode(&u)
+    if err != nil {
+		log.Printf("Error finding user with _id %v: %v", oid, err)
+        w.WriteHeader(http.StatusNotFound)
+        fmt.Fprintf(w, "%s", err)
+        return
+    }
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(u)
+}
 
-// 	oid := bson.ObjectIdHex(id)
+func (uc UserController) DeleteUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	id := p.ByName("id")
 
-// 	if err := uc.Session.DB("mongo-golang").C("users").RemoveId(oid); err != nil {
-// 		w.WriteHeader(404)
-// 	}
+	oid, err :=  primitive.ObjectIDFromHex(id)
+	if err != nil{
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "%s", err)
+        return
+	}
 
-// 	w.WriteHeader(http.StatusOK)
-// 	fmt.Fprintf(w, "Deleted user", oid, "\n")
-// }
+	result, err := uc.Session.Database("mongo-golang").Collection("users").DeleteOne(context.Background(), bson.M{"_id": oid})
+	if err != nil{
+		log.Fatal(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(result)
+}

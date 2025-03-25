@@ -16,7 +16,7 @@ func main(){
 	uc := controllers.NewUserController(getSession())
 	r.GET("/user/:id", uc.GetUser)
 	r.POST("/user", uc.CreateUser)
-	// r.DELETE("/user/:id", uc.DeleteUser)
+	r.DELETE("/user/:id", uc.DeleteUser)
 	fmt.Println("Sever is running on port... 8080")
 	http.ListenAndServe(":8080", r)
 }
